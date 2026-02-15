@@ -32,9 +32,11 @@ afterAll(() => {
 
 describe('compressVideo', { timeout: 30_000 }, () => {
   it('compresses with default options and creates output file', async () => {
-    await compressVideo(inputPath);
+    const result = await compressVideo(inputPath);
 
     const outputPath = path.join(tmpDir, 'input_compressed.mp4');
+    expect(result.success).toBe(true);
+    expect(result.outputPath).toBe(outputPath);
     expect(fs.existsSync(outputPath)).toBe(true);
     expect(fs.statSync(outputPath).size).toBeGreaterThan(0);
   });
@@ -42,9 +44,10 @@ describe('compressVideo', { timeout: 30_000 }, () => {
   it('creates output directory when outputDir does not exist', async () => {
     const subdir = path.join(tmpDir, 'custom-output');
 
-    await compressVideo(inputPath, { outputDir: subdir });
+    const result = await compressVideo(inputPath, { outputDir: subdir });
 
     const outputPath = path.join(subdir, 'input_compressed.mp4');
+    expect(result.success).toBe(true);
     expect(fs.existsSync(subdir)).toBe(true);
     expect(fs.existsSync(outputPath)).toBe(true);
     expect(fs.statSync(outputPath).size).toBeGreaterThan(0);
@@ -53,9 +56,10 @@ describe('compressVideo', { timeout: 30_000 }, () => {
   it('compresses with quality "low" successfully', async () => {
     const subdir = path.join(tmpDir, 'low-quality');
 
-    await compressVideo(inputPath, { quality: 'low', outputDir: subdir });
+    const result = await compressVideo(inputPath, { quality: 'low', outputDir: subdir });
 
     const outputPath = path.join(subdir, 'input_compressed.mp4');
+    expect(result.success).toBe(true);
     expect(fs.existsSync(outputPath)).toBe(true);
     expect(fs.statSync(outputPath).size).toBeGreaterThan(0);
   });
@@ -71,8 +75,9 @@ describe('compressVideo', { timeout: 30_000 }, () => {
     fs.copyFileSync(inputPath, input);
     const outDir = path.join(tmpDir, 'out-mov');
 
-    await compressVideo(input, { outputDir: outDir });
+    const result = await compressVideo(input, { outputDir: outDir });
 
+    expect(result.success).toBe(true);
     const outputPath = path.join(outDir, 'test_compressed.mov');
     expect(fs.existsSync(outputPath)).toBe(true);
     expect(fs.statSync(outputPath).size).toBeGreaterThan(0);
@@ -83,8 +88,9 @@ describe('compressVideo', { timeout: 30_000 }, () => {
     fs.copyFileSync(inputPath, input);
     const outDir = path.join(tmpDir, 'out-avi');
 
-    await compressVideo(input, { outputDir: outDir });
+    const result = await compressVideo(input, { outputDir: outDir });
 
+    expect(result.success).toBe(true);
     const outputPath = path.join(outDir, 'test_compressed.avi');
     expect(fs.existsSync(outputPath)).toBe(true);
     expect(fs.statSync(outputPath).size).toBeGreaterThan(0);
@@ -95,8 +101,9 @@ describe('compressVideo', { timeout: 30_000 }, () => {
     fs.copyFileSync(inputPath, input);
     const outDir = path.join(tmpDir, 'out-mkv');
 
-    await compressVideo(input, { outputDir: outDir });
+    const result = await compressVideo(input, { outputDir: outDir });
 
+    expect(result.success).toBe(true);
     const outputPath = path.join(outDir, 'test_compressed.mkv');
     expect(fs.existsSync(outputPath)).toBe(true);
     expect(fs.statSync(outputPath).size).toBeGreaterThan(0);
@@ -107,8 +114,9 @@ describe('compressVideo', { timeout: 30_000 }, () => {
     fs.copyFileSync(inputPath, input);
     const outDir = path.join(tmpDir, 'out-flv');
 
-    await compressVideo(input, { outputDir: outDir });
+    const result = await compressVideo(input, { outputDir: outDir });
 
+    expect(result.success).toBe(true);
     const outputPath = path.join(outDir, 'test_compressed.flv');
     expect(fs.existsSync(outputPath)).toBe(true);
     expect(fs.statSync(outputPath).size).toBeGreaterThan(0);
@@ -119,8 +127,9 @@ describe('compressVideo', { timeout: 30_000 }, () => {
     fs.copyFileSync(inputPath, input);
     const outDir = path.join(tmpDir, 'out-wmv');
 
-    await compressVideo(input, { outputDir: outDir });
+    const result = await compressVideo(input, { outputDir: outDir });
 
+    expect(result.success).toBe(true);
     const outputPath = path.join(outDir, 'test_compressed.wmv');
     expect(fs.existsSync(outputPath)).toBe(true);
     expect(fs.statSync(outputPath).size).toBeGreaterThan(0);
@@ -131,8 +140,9 @@ describe('compressVideo', { timeout: 30_000 }, () => {
     fs.copyFileSync(inputPath, input);
     const outDir = path.join(tmpDir, 'out-m4v');
 
-    await compressVideo(input, { outputDir: outDir });
+    const result = await compressVideo(input, { outputDir: outDir });
 
+    expect(result.success).toBe(true);
     const outputPath = path.join(outDir, 'test_compressed.m4v');
     expect(fs.existsSync(outputPath)).toBe(true);
     expect(fs.statSync(outputPath).size).toBeGreaterThan(0);
@@ -158,9 +168,76 @@ describe('compressMultipleVideos', { timeout: 30_000 }, () => {
     );
 
     const outDir = path.join(tmpDir, 'multi-output');
-    await compressMultipleVideos([inputPath, input2], { outputDir: outDir });
+    const results = await compressMultipleVideos([inputPath, input2], { outputDir: outDir });
 
+    expect(results).toHaveLength(2);
+    expect(results[0].success).toBe(true);
+    expect(results[1].success).toBe(true);
     expect(fs.existsSync(path.join(outDir, 'input_compressed.mp4'))).toBe(true);
     expect(fs.existsSync(path.join(outDir, 'input2_compressed.mp4'))).toBe(true);
+  });
+});
+
+describe('compressMultipleVideos parallel', { timeout: 60_000 }, () => {
+  it('compresses multiple files in parallel', async () => {
+    const input2 = path.join(tmpDir, 'par_input2.mp4');
+    const input3 = path.join(tmpDir, 'par_input3.mp4');
+    execSync(
+      `"${ffmpegInstaller.path}" -f lavfi -i color=black:s=16x16:d=1 -c:v libx264 -t 1 "${input2}" -y`,
+      { stdio: 'ignore' }
+    );
+    execSync(
+      `"${ffmpegInstaller.path}" -f lavfi -i color=black:s=16x16:d=1 -c:v libx264 -t 1 "${input3}" -y`,
+      { stdio: 'ignore' }
+    );
+
+    const outDir = path.join(tmpDir, 'parallel-output');
+    const results = await compressMultipleVideos([inputPath, input2, input3], {
+      outputDir: outDir,
+      parallel: 2,
+    });
+
+    expect(results).toHaveLength(3);
+    expect(results[0].success).toBe(true);
+    expect(results[1].success).toBe(true);
+    expect(results[2].success).toBe(true);
+    expect(fs.existsSync(path.join(outDir, 'input_compressed.mp4'))).toBe(true);
+    expect(fs.existsSync(path.join(outDir, 'par_input2_compressed.mp4'))).toBe(true);
+    expect(fs.existsSync(path.join(outDir, 'par_input3_compressed.mp4'))).toBe(true);
+  });
+
+  it('continues when one file fails in parallel', async () => {
+    const validInput = path.join(tmpDir, 'par_valid.mp4');
+    execSync(
+      `"${ffmpegInstaller.path}" -f lavfi -i color=black:s=16x16:d=1 -c:v libx264 -t 1 "${validInput}" -y`,
+      { stdio: 'ignore' }
+    );
+    const bogus = path.join(tmpDir, 'does-not-exist-parallel.mp4');
+
+    const outDir = path.join(tmpDir, 'parallel-partial');
+    const results = await compressMultipleVideos([bogus, validInput], {
+      outputDir: outDir,
+      parallel: 2,
+    });
+
+    expect(results).toHaveLength(2);
+    const failure = results.find(r => !r.success);
+    const success = results.find(r => r.success);
+    expect(failure).toBeDefined();
+    expect(failure!.inputPath).toBe(bogus);
+    expect(success).toBeDefined();
+    expect(success!.inputPath).toBe(validInput);
+  });
+
+  it('parallel=1 behaves like sequential', async () => {
+    const outDir = path.join(tmpDir, 'parallel-one');
+    const results = await compressMultipleVideos([inputPath], {
+      outputDir: outDir,
+      parallel: 1,
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0].success).toBe(true);
+    expect(fs.existsSync(path.join(outDir, 'input_compressed.mp4'))).toBe(true);
   });
 });

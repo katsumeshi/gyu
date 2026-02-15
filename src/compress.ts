@@ -2,12 +2,28 @@ import ffmpeg from 'fluent-ffmpeg';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import * as path from 'path';
 import * as fs from 'fs';
+import cliProgress from 'cli-progress';
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+
+export interface CompressionResult {
+  inputPath: string;
+  outputPath: string;
+  success: boolean;
+  error?: string;
+  inputSize?: number;
+  outputSize?: number;
+  reductionPercent?: number;
+  durationSeconds?: number;
+}
 
 export interface CompressOptions {
   quality?: string;
   outputDir?: string;
+  parallel?: number;
+  quietProgress?: boolean;
+  label?: string;
+  onProgress?: (percent: number) => void;
 }
 
 // Get CRF value for the given quality level
@@ -35,7 +51,7 @@ function formatFileSize(bytes: number): string {
 export async function compressVideo(
   inputPath: string,
   options: CompressOptions = {}
-): Promise<void> {
+): Promise<CompressionResult> {
   return new Promise((resolve, reject) => {
     const crf = getCRF(options.quality || 'medium');
     const inputDir = path.dirname(inputPath);
@@ -53,10 +69,11 @@ export async function compressVideo(
 
     const startTime = Date.now();
     const inputSize = fs.statSync(inputPath).size;
+    const prefix = options.label ? `${options.label} ` : '';
 
-    console.log(`📹 Compressing: ${path.basename(inputPath)}`);
-    console.log(`   Quality: ${options.quality || 'medium'} (CRF: ${crf})`);
-    console.log(`   Original size: ${formatFileSize(inputSize)}`);
+    console.log(`${prefix}📹 Compressing: ${path.basename(inputPath)}`);
+    console.log(`${prefix}   Quality: ${options.quality || 'medium'} (CRF: ${crf})`);
+    console.log(`${prefix}   Original size: ${formatFileSize(inputSize)}`);
 
     ffmpeg(inputPath)
       .outputOptions([
@@ -72,37 +89,122 @@ export async function compressVideo(
       })
       .on('progress', (progress) => {
         if (progress.percent) {
-          process.stdout.write(`\r   Progress: ${progress.percent.toFixed(1)}%`);
+          if (options.onProgress) {
+            options.onProgress(progress.percent);
+          } else if (!options.quietProgress) {
+            process.stdout.write(`\r${prefix}   Progress: ${progress.percent.toFixed(1)}%`);
+          }
         }
       })
       .on('end', () => {
         const endTime = Date.now();
-        const duration = ((endTime - startTime) / 1000).toFixed(1);
+        const durationSeconds = (endTime - startTime) / 1000;
         const outputSize = fs.statSync(outputPath).size;
-        const reduction = ((1 - outputSize / inputSize) * 100).toFixed(1);
+        const reductionPercent = (1 - outputSize / inputSize) * 100;
 
-        console.log(`\r   Progress: 100.0%`);
-        console.log(`   Compressed: ${formatFileSize(outputSize)}`);
-        console.log(`   Reduction: ${reduction}%`);
-        console.log(`   Duration: ${duration}s`);
-        console.log(`   ✓ Done: ${path.basename(outputPath)}\n`);
-        resolve();
+        if (!options.quietProgress) {
+          console.log(`\r${prefix}   Progress: 100.0%`);
+          console.log(`${prefix}   Compressed: ${formatFileSize(outputSize)}`);
+          console.log(`${prefix}   Reduction: ${reductionPercent.toFixed(1)}%`);
+          console.log(`${prefix}   Duration: ${durationSeconds.toFixed(1)}s`);
+          console.log(`${prefix}   ✓ Done: ${path.basename(outputPath)}\n`);
+        }
+
+        resolve({
+          inputPath,
+          outputPath,
+          success: true,
+          inputSize,
+          outputSize,
+          reductionPercent,
+          durationSeconds,
+        });
       })
       .on('error', (err) => {
-        console.error(`\n   ❌ Error: ${err.message}\n`);
+        console.error(`\n${prefix}   ❌ Error: ${err.message}\n`);
         reject(err);
       })
       .save(outputPath);
   });
 }
 
-// Compress multiple videos sequentially
+// Compress multiple videos
 export async function compressMultipleVideos(
   files: string[],
   options: CompressOptions = {}
-): Promise<void> {
-  for (let i = 0; i < files.length; i++) {
-    console.log(`[${i + 1}/${files.length}]`);
-    await compressVideo(files[i], options);
+): Promise<CompressionResult[]> {
+  const parallel = options.parallel || 1;
+
+  if (parallel <= 1) {
+    // Sequential mode (preserves current behavior)
+    const results: CompressionResult[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const label = `[${i + 1}/${files.length}]`;
+      console.log(label);
+      try {
+        const result = await compressVideo(files[i], { ...options, label });
+        results.push(result);
+      } catch (err) {
+        results.push({
+          inputPath: files[i],
+          outputPath: '',
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+    return results;
   }
+
+  // Parallel mode
+  const results: CompressionResult[] = new Array(files.length);
+  const multiBar = new cliProgress.MultiBar({
+    format: ' {bar} | {filename} | {percentage}%',
+    clearOnComplete: false,
+    hideCursor: true,
+  }, cliProgress.Presets.shades_grey);
+
+  let nextIndex = 0;
+
+  async function runWorker(): Promise<void> {
+    while (nextIndex < files.length) {
+      const i = nextIndex++;
+      const file = files[i];
+      const filename = path.basename(file);
+      const bar = multiBar.create(100, 0, { filename });
+
+      try {
+        const result = await compressVideo(file, {
+          ...options,
+          quietProgress: true,
+          onProgress: (percent) => {
+            bar.update(Math.round(percent), { filename });
+          },
+        });
+        bar.update(100, { filename });
+        multiBar.remove(bar);
+        console.log(`   ✓ Done: ${path.basename(result.outputPath)}`);
+        results[i] = result;
+      } catch (err) {
+        bar.update(0, { filename: `${filename} (failed)` });
+        multiBar.remove(bar);
+        console.log(`   ❌ Failed: ${filename}`);
+        results[i] = {
+          inputPath: file,
+          outputPath: '',
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+        };
+      }
+    }
+  }
+
+  const workers: Promise<void>[] = [];
+  for (let w = 0; w < Math.min(parallel, files.length); w++) {
+    workers.push(runWorker());
+  }
+  await Promise.all(workers);
+
+  multiBar.stop();
+  return results;
 }
