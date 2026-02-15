@@ -11,6 +11,12 @@ function isVideoFile(filePath: string): boolean {
   return VIDEO_EXTENSIONS.includes(ext);
 }
 
+// Check if file is already compressed by gyu
+function isCompressedFile(filePath: string): boolean {
+  const name = path.basename(filePath, path.extname(filePath));
+  return name.endsWith('_compressed');
+}
+
 // Get video files from input list
 export async function getVideoFiles(inputs: string[]): Promise<string[]> {
   const files: string[] = [];
@@ -20,16 +26,16 @@ export async function getVideoFiles(inputs: string[]): Promise<string[]> {
     if (fs.existsSync(input) && fs.statSync(input).isDirectory()) {
       const pattern = path.join(input, '**', '*');
       const dirFiles = await glob(pattern, { nodir: true });
-      files.push(...dirFiles.filter(isVideoFile));
+      files.push(...dirFiles.filter(f => isVideoFile(f) && !isCompressedFile(f)));
     }
     // Wildcard pattern
     else if (input.includes('*') || input.includes('?')) {
       const matchedFiles = await glob(input, { nodir: true });
-      files.push(...matchedFiles.filter(isVideoFile));
+      files.push(...matchedFiles.filter(f => isVideoFile(f) && !isCompressedFile(f)));
     }
     // Regular file path
     else if (fs.existsSync(input)) {
-      if (isVideoFile(input)) {
+      if (isVideoFile(input) && !isCompressedFile(input)) {
         files.push(input);
       }
     } else {
