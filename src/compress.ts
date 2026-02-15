@@ -1,0 +1,108 @@
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import * as path from 'path';
+import * as fs from 'fs';
+
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+
+export interface CompressOptions {
+  quality?: string;
+  outputDir?: string;
+}
+
+// Get CRF value for the given quality level
+function getCRF(quality: string): number {
+  switch (quality.toLowerCase()) {
+    case 'high':
+      return 20; // high quality
+    case 'low':
+      return 28; // low quality (high compression)
+    case 'medium':
+    default:
+      return 23; // medium quality (default)
+  }
+}
+
+// Format file size to human-readable string
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+}
+
+// Compress a single video
+export async function compressVideo(
+  inputPath: string,
+  options: CompressOptions = {}
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const crf = getCRF(options.quality || 'medium');
+    const inputDir = path.dirname(inputPath);
+    const inputName = path.basename(inputPath, path.extname(inputPath));
+    const inputExt = path.extname(inputPath);
+
+    // Determine output path
+    const outputDir = options.outputDir || inputDir;
+    const outputPath = path.join(outputDir, `${inputName}_compressed${inputExt}`);
+
+    // Create output directory if it doesn't exist
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    const startTime = Date.now();
+    const inputSize = fs.statSync(inputPath).size;
+
+    console.log(`📹 Compressing: ${path.basename(inputPath)}`);
+    console.log(`   Quality: ${options.quality || 'medium'} (CRF: ${crf})`);
+    console.log(`   Original size: ${formatFileSize(inputSize)}`);
+
+    ffmpeg(inputPath)
+      .outputOptions([
+        `-c:v libx264`, // H.264 codec
+        `-crf ${crf}`, // quality setting
+        `-preset medium`, // balance between encoding speed and compression ratio
+        `-c:a aac`, // audio codec
+        `-b:a 128k`, // audio bitrate
+      ])
+      .on('start', (commandLine) => {
+        // Debug (uncomment if needed)
+        // console.log('   ffmpeg command:', commandLine);
+      })
+      .on('progress', (progress) => {
+        if (progress.percent) {
+          process.stdout.write(`\r   Progress: ${progress.percent.toFixed(1)}%`);
+        }
+      })
+      .on('end', () => {
+        const endTime = Date.now();
+        const duration = ((endTime - startTime) / 1000).toFixed(1);
+        const outputSize = fs.statSync(outputPath).size;
+        const reduction = ((1 - outputSize / inputSize) * 100).toFixed(1);
+
+        console.log(`\r   Progress: 100.0%`);
+        console.log(`   Compressed: ${formatFileSize(outputSize)}`);
+        console.log(`   Reduction: ${reduction}%`);
+        console.log(`   Duration: ${duration}s`);
+        console.log(`   ✓ Done: ${path.basename(outputPath)}\n`);
+        resolve();
+      })
+      .on('error', (err) => {
+        console.error(`\n   ❌ Error: ${err.message}\n`);
+        reject(err);
+      })
+      .save(outputPath);
+  });
+}
+
+// Compress multiple videos sequentially
+export async function compressMultipleVideos(
+  files: string[],
+  options: CompressOptions = {}
+): Promise<void> {
+  for (let i = 0; i < files.length; i++) {
+    console.log(`[${i + 1}/${files.length}]`);
+    await compressVideo(files[i], options);
+  }
+}
