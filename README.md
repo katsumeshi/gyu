@@ -10,7 +10,6 @@ A simple command-line tool to compress video files easily. Wraps ffmpeg to achie
 - 📦 **Batch Processing** - Compress multiple files or entire directories at once
 - 🎯 **Quality Selection** - Choose from high/medium/low presets
 - 📊 **Progress Display** - Real-time compression status
-- ⚡ **Parallel Mode** - Compress multiple videos concurrently
 - 🌍 **Multiple Formats** - Supports MP4, MOV, AVI, MKV, WebM, and more
 
 ## 📦 Installation
@@ -54,11 +53,6 @@ gyu *.mp4 -o output/
 
 # Combine options
 gyu *.mp4 -q high -o compressed/
-
-# Compress videos in parallel
-gyu *.mp4 --parallel       # uses all CPU cores
-gyu *.mp4 -p 4             # 4 concurrent
-gyu videos/ -p 3 -q high -o compressed/
 ```
 
 ### Quality Levels
@@ -68,14 +62,6 @@ gyu videos/ -p 3 -q high -o compressed/
 | `high`   | 20  | When you want to preserve high quality |
 | `medium` | 23  | Balanced quality and size (default)    |
 | `low`    | 28  | Prioritize file size reduction         |
-
-### Options Reference
-
-| Option | Alias | Description |
-| --- | --- | --- |
-| `--quality <level>` | `-q` | Compression quality: high, medium (default), low |
-| `--output <dir>` | `-o` | Output directory for compressed files |
-| `--parallel [n]` | `-p` | Compress N videos concurrently (default: number of CPU cores) |
 
 ## 📖 Examples
 

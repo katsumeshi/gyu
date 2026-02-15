@@ -4,7 +4,6 @@ import { Command } from 'commander';
 import { compressVideo, compressMultipleVideos } from './compress';
 import { getVideoFiles } from './utils';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 
 const program = new Command();
@@ -23,7 +22,6 @@ program
   .argument('[files...]', 'Video files to compress (multiple allowed, wildcards supported)')
   .option('-o, --output <dir>', 'Output directory')
   .option('-q, --quality <level>', 'Compression quality (high/medium/low)', 'medium')
-  .option('-p, --parallel [n]', 'Compress N videos in parallel (default: number of CPU cores)')
   .action(async (files: string[], options) => {
     try {
       if (!files || files.length === 0) {
@@ -44,46 +42,15 @@ program
         process.exit(1);
       }
 
-      // Parse parallel option
-      let parallel = 1;
-      if (options.parallel !== undefined) {
-        if (options.parallel === true) {
-          // Flag present without value: --parallel
-          parallel = os.cpus().length;
-        } else {
-          parallel = parseInt(options.parallel, 10);
-          if (isNaN(parallel) || parallel < 1) {
-            console.error('❌ Error: --parallel must be a positive integer');
-            process.exit(1);
-          }
-        }
-        const cpuCores = os.cpus().length;
-        if (parallel > cpuCores) {
-          parallel = cpuCores;
-        }
-      }
-
-      console.log(`\n🎬 Compressing ${videoFiles.length} file(s)${parallel > 1 ? ` (${parallel} parallel)` : ''}...\n`);
+      console.log(`\n🎬 Compressing ${videoFiles.length} file(s)...\n`);
 
       // Compress multiple files
-      const results = await compressMultipleVideos(videoFiles, {
+      await compressMultipleVideos(videoFiles, {
         quality: options.quality,
         outputDir: options.output,
-        parallel,
       });
 
-      const failures = results.filter(r => !r.success);
-      if (failures.length === 0) {
-        console.log('\n✅ All files compressed successfully!\n');
-      } else {
-        console.log(`\n⚠️  ${results.length - failures.length}/${results.length} files compressed successfully.`);
-        console.log(`❌ ${failures.length} file(s) failed:`);
-        for (const f of failures) {
-          console.log(`   - ${path.basename(f.inputPath)}: ${f.error}`);
-        }
-        console.log('');
-        process.exit(1);
-      }
+      console.log('\n✅ All files compressed successfully!\n');
     } catch (error) {
       console.error('\n❌ An error occurred:', error);
       process.exit(1);
