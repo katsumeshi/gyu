@@ -98,7 +98,7 @@ demo.mov → demo_compressed.mov
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/gyu.git
+git clone https://github.com/katsumeshi/gyu.git
 cd gyu
 
 # Install dependencies
