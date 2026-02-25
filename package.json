@@ -20,18 +20,15 @@
     "cli",
     "tool"
   ],
-  "author": "",
+  "author": "katsumeshi",
   "license": "MIT",
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "chalk": "^4.1.2",
-    "cli-progress": "^3.12.0",
     "commander": "^11.0.0",
     "fluent-ffmpeg": "^2.1.2",
-    "glob": "^10.3.0"
+    "glob": "^11.0.0"
   },
   "devDependencies": {
-    "@types/cli-progress": "^3.11.0",
     "@types/fluent-ffmpeg": "^2.1.21",
     "@types/glob": "^8.1.0",
     "@types/node": "^20.0.0",

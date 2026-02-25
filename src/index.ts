@@ -24,6 +24,12 @@ program
   .option('-q, --quality <level>', 'Compression quality (high/medium/low)', 'medium')
   .action(async (files: string[], options) => {
     try {
+      const VALID_QUALITIES = ['high', 'medium', 'low'];
+      if (!VALID_QUALITIES.includes(options.quality)) {
+        console.error(`❌ Error: Invalid quality "${options.quality}". Must be: high, medium, or low`);
+        process.exit(1);
+      }
+
       if (!files || files.length === 0) {
         console.error('❌ Error: Please specify files to compress');
         console.log('\nUsage:');
@@ -52,7 +58,7 @@ program
 
       console.log('\n✅ All files compressed successfully!\n');
     } catch (error) {
-      console.error('\n❌ An error occurred:', error);
+      console.error('\n❌ An error occurred:', error instanceof Error ? error.message : String(error));
       process.exit(1);
     }
   });

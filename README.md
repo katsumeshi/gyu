@@ -10,7 +10,7 @@ A simple command-line tool to compress video files easily. Wraps ffmpeg to achie
 - 📦 **Batch Processing** - Compress multiple files or entire directories at once
 - 🎯 **Quality Selection** - Choose from high/medium/low presets
 - 📊 **Progress Display** - Real-time compression status
-- 🌍 **Multiple Formats** - Supports MP4, MOV, AVI, MKV, WebM, and more
+- 🌍 **Multiple Formats** - Supports MP4, MOV, AVI, MKV, and more
 
 ## 📦 Installation
 
@@ -137,7 +137,7 @@ A: With CRF 23 (medium), the difference is barely noticeable to the human eye. U
 
 ### Q: What video formats are supported?
 
-A: MP4, MOV, AVI, MKV, FLV, WMV, WebM, M4V - basically any format that ffmpeg supports.
+A: MP4, MOV, AVI, MKV, FLV, WMV, M4V - basically any format that ffmpeg supports.
 
 ### Q: Is audio also compressed?
 

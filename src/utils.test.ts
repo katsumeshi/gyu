@@ -44,7 +44,6 @@ describe('getVideoFiles', () => {
     expect(result).toContain(path.join(tmpDir, 'sub', 'nested.mkv'));
     expect(result).toContain(path.join(tmpDir, 'stream.flv'));
     expect(result).toContain(path.join(tmpDir, 'screen.wmv'));
-    expect(result).toContain(path.join(tmpDir, 'web.webm'));
     expect(result).toContain(path.join(tmpDir, 'apple.m4v'));
 
     // Non-video files are excluded
@@ -53,7 +52,7 @@ describe('getVideoFiles', () => {
     expect(result).not.toContain(path.join(tmpDir, 'data.csv'));
     expect(result).not.toContain(path.join(tmpDir, 'style.css'));
 
-    expect(result).toHaveLength(8);
+    expect(result).toHaveLength(7);
   });
 
   it('recognizes .mp4 as a video file', async () => {
@@ -95,7 +94,7 @@ describe('getVideoFiles', () => {
   it('recognizes .webm as a video file', async () => {
     const filePath = path.join(tmpDir, 'web.webm');
     const result = await getVideoFiles([filePath]);
-    expect(result).toEqual([filePath]);
+    expect(result).toEqual([]);
   });
 
   it('recognizes .m4v as a video file', async () => {
