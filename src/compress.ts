@@ -23,12 +23,16 @@ function getCRF(quality: string): number {
   }
 }
 
+const KB = 1024;
+const MB = 1024 * KB;
+const GB = 1024 * MB;
+
 // Format file size to human-readable string
 function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
-  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  if (bytes < KB) return bytes + ' B';
+  if (bytes < MB) return (bytes / KB).toFixed(2) + ' KB';
+  if (bytes < GB) return (bytes / MB).toFixed(2) + ' MB';
+  return (bytes / GB).toFixed(2) + ' GB';
 }
 
 // Compress a single video
