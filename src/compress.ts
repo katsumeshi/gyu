@@ -10,16 +10,15 @@ export interface CompressOptions {
   outputDir?: string;
 }
 
-// Get CRF value for the given quality level
 function getCRF(quality: string): number {
   switch (quality.toLowerCase()) {
     case 'high':
-      return 20; // high quality
+      return 20;
     case 'low':
-      return 28; // low quality (high compression)
+      return 28;
     case 'medium':
     default:
-      return 23; // medium quality (default)
+      return 23;
   }
 }
 
@@ -27,7 +26,6 @@ const KB = 1024;
 const MB = 1024 * KB;
 const GB = 1024 * MB;
 
-// Format file size to human-readable string
 function formatFileSize(bytes: number): string {
   if (bytes < KB) return bytes + ' B';
   if (bytes < MB) return (bytes / KB).toFixed(2) + ' KB';
@@ -35,7 +33,6 @@ function formatFileSize(bytes: number): string {
   return (bytes / GB).toFixed(2) + ' GB';
 }
 
-// Compress a single video
 export async function compressVideo(
   inputPath: string,
   options: CompressOptions = {}
@@ -46,11 +43,9 @@ export async function compressVideo(
     const inputName = path.basename(inputPath, path.extname(inputPath));
     const inputExt = path.extname(inputPath);
 
-    // Determine output path
     const outputDir = options.outputDir || inputDir;
     const outputPath = path.join(outputDir, `${inputName}_compressed${inputExt}`);
 
-    // Create output directory if it doesn't exist
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
@@ -64,16 +59,12 @@ export async function compressVideo(
 
     ffmpeg(inputPath)
       .outputOptions([
-        `-c:v libx264`, // H.264 codec
-        `-crf ${crf}`, // quality setting
+        `-c:v libx264`,
+        `-crf ${crf}`,
         `-preset medium`, // balance between encoding speed and compression ratio
-        `-c:a aac`, // audio codec
-        `-b:a 128k`, // audio bitrate
+        `-c:a aac`,
+        `-b:a 128k`,
       ])
-      .on('start', (commandLine) => {
-        // Debug (uncomment if needed)
-        // console.log('   ffmpeg command:', commandLine);
-      })
       .on('progress', (progress) => {
         if (progress.percent) {
           process.stdout.write(`\r   Progress: ${progress.percent.toFixed(1)}%`);
@@ -100,7 +91,6 @@ export async function compressVideo(
   });
 }
 
-// Compress multiple videos sequentially
 export async function compressMultipleVideos(
   files: string[],
   options: CompressOptions = {}
