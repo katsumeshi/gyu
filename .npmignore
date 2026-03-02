@@ -1,0 +1,14 @@
+# Source files (consumers need compiled dist/, not TypeScript source)
+src/
+
+# Development config
+tsconfig.json
+vitest.config.ts
+.gitignore
+
+# CI/CD
+.github/
+
+# Editor/tool config
+.claude/
+.DS_Store
