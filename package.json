@@ -1,0 +1,38 @@
+{
+  "name": "gyu",
+  "version": "0.1.0",
+  "description": "Fast and simple video compression CLI - ギュッと圧縮",
+  "main": "dist/index.js",
+  "bin": {
+    "gyu": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc && node dist/index.js",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "video",
+    "compress",
+    "compression",
+    "ffmpeg",
+    "cli",
+    "tool"
+  ],
+  "author": "katsumeshi",
+  "license": "MIT",
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "commander": "^11.0.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "glob": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/fluent-ffmpeg": "^2.1.21",
+    "@types/glob": "^8.1.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.18"
+  }
+}
