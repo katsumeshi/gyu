@@ -16,10 +16,10 @@ A simple command-line tool to compress video files easily. Wraps ffmpeg to achie
 
 ```bash
 # Install globally via npm
-npm install -g gyu
+npm install -g gyu-cli
 
 # Or run directly with npx (no installation needed)
-npx gyu video.mp4
+npx gyu-cli video.mp4
 ```
 
 ## 🚀 Usage

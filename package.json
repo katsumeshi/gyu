@@ -1,6 +1,6 @@
 {
-  "name": "gyu",
-  "version": "0.1.0",
+  "name": "gyu-cli",
+  "version": "0.1.1",
   "description": "Fast and simple video compression CLI - ギュッと圧縮",
   "main": "dist/index.js",
   "bin": {
